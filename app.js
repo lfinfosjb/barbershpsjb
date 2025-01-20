@@ -4,8 +4,22 @@ class BarberShopScheduler {
     this.currentDate = new Date();
     this.selectedDate = null;
     this.selectedTimeSlot = null;
-    this.appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    
+
+    // Enhance the appointment loading with error handling
+    try {
+      this.appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+      // Validate loaded data
+      if (!Array.isArray(this.appointments)) {
+        console.warn('Invalid appointments data format, resetting to empty array');
+        this.appointments = [];
+      }
+    } catch (e) {
+      console.error('Error loading appointments:', e);
+      this.appointments = [];
+    }
+
+    // Clean up old appointments periodically (once per day)
+    this.cleanUpOldAppointments();
     this.initializeElements();
     this.attachEventListeners();
     this.renderCalendar();
@@ -155,6 +169,36 @@ class BarberShopScheduler {
     document.getElementById('selectedDateTime').value = dateTime.toISOString();
   }
 
+  // Add new method to clean up old appointments
+  cleanUpOldAppointments() {
+    const lastCleanup = localStorage.getItem('lastCleanup');
+    const now = new Date().getTime();
+    
+    // Run cleanup if it hasn't been done today
+    if (!lastCleanup || (now - parseInt(lastCleanup)) > 86400000) { // 24 hours
+      // Remove appointments older than 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      
+      this.appointments = this.appointments.filter(apt => {
+        return new Date(apt.datetime) > sixMonthsAgo;
+      });
+      
+      this.saveAppointments();
+      localStorage.setItem('lastCleanup', now.toString());
+    }
+  }
+
+  // Add new method to handle storage
+  saveAppointments() {
+    try {
+      localStorage.setItem('appointments', JSON.stringify(this.appointments));
+    } catch (e) {
+      console.error('Error saving appointments:', e);
+      alert('Erro ao salvar o agendamento. Por favor, tente novamente.');
+    }
+  }
+
   handleBookingSubmit(e) {
     e.preventDefault();
     
@@ -171,22 +215,28 @@ class BarberShopScheduler {
       datetime: document.getElementById('selectedDateTime').value,
       name: document.getElementById('clientName').value,
       phone: document.getElementById('clientPhone').value,
-      services: selectedServices
+      services: selectedServices,
+      createdAt: new Date().toISOString() // Add creation timestamp
     };
     
-    this.appointments.push(appointment);
-    localStorage.setItem('appointments', JSON.stringify(this.appointments));
-    
-    // Reset selection
-    this.selectedTimeSlot = null;
-    
-    this.renderCalendar();
-    this.renderTimeSlots();
-    this.renderAppointmentsList();
-    this.appointmentForm.classList.add('hidden');
-    this.bookingForm.reset();
-    
-    alert('Agendamento realizado com sucesso!');
+    try {
+      this.appointments.push(appointment);
+      this.saveAppointments();
+      
+      // Reset selection
+      this.selectedTimeSlot = null;
+      
+      this.renderCalendar();
+      this.renderTimeSlots();
+      this.renderAppointmentsList();
+      this.appointmentForm.classList.add('hidden');
+      this.bookingForm.reset();
+      
+      alert('Agendamento realizado com sucesso!');
+    } catch (e) {
+      console.error('Error during booking:', e);
+      alert('Erro ao realizar o agendamento. Por favor, tente novamente.');
+    }
   }
 
   renderAppointmentsList() {
@@ -195,35 +245,49 @@ class BarberShopScheduler {
     const currentDate = new Date();
     currentDate.setHours(23, 59, 59, 999); // End of current day
     
-    const sortedAppointments = [...this.appointments]
-      .filter(apt => new Date(apt.datetime) <= currentDate) // Only show appointments up to current date
-      .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-    
-    if (sortedAppointments.length === 0) {
-      const emptyMessage = document.createElement('div');
-      emptyMessage.classList.add('empty-message');
-      emptyMessage.textContent = 'Nenhum agendamento anterior encontrado.';
-      this.appointmentsList.appendChild(emptyMessage);
-      return;
+    try {
+      const sortedAppointments = [...this.appointments]
+        .filter(apt => new Date(apt.datetime) <= currentDate)
+        .sort((a, b) => new Date(b.datetime) - new Date(a.datetime)); // Most recent first
+      
+      if (sortedAppointments.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.classList.add('empty-message');
+        emptyMessage.textContent = 'Nenhum agendamento anterior encontrado.';
+        this.appointmentsList.appendChild(emptyMessage);
+        return;
+      }
+      
+      sortedAppointments.forEach(apt => {
+        const date = new Date(apt.datetime);
+        const appointmentElement = document.createElement('div');
+        appointmentElement.classList.add('appointment-item');
+        appointmentElement.innerHTML = `
+          <strong>${date.toLocaleDateString('pt-BR')}</strong> - 
+          ${date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} - 
+          ${apt.name} (${apt.phone})<br>
+          Serviços: ${apt.services.join(', ')}
+        `;
+        this.appointmentsList.appendChild(appointmentElement);
+      });
+    } catch (e) {
+      console.error('Error rendering appointments list:', e);
+      const errorMessage = document.createElement('div');
+      errorMessage.classList.add('error-message', 'visible');
+      errorMessage.textContent = 'Erro ao carregar o histórico de agendamentos.';
+      this.appointmentsList.appendChild(errorMessage);
     }
-    
-    sortedAppointments.forEach(apt => {
-      const date = new Date(apt.datetime);
-      const appointmentElement = document.createElement('div');
-      appointmentElement.classList.add('appointment-item');
-      appointmentElement.innerHTML = `
-        <strong>${date.toLocaleDateString('pt-BR')}</strong> - 
-        ${date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} - 
-        ${apt.name} (${apt.phone})<br>
-        Serviços: ${apt.services.join(', ')}
-      `;
-      this.appointmentsList.appendChild(appointmentElement);
-    });
   }
-
 }
 
-// Inicializar o aplicativo
+// Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
   new BarberShopScheduler();
+  
+  // Add storage event listener to sync across tabs
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'appointments') {
+      window.location.reload(); // Reload page to sync appointments
+    }
+  });
 });
