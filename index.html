@@ -1,0 +1,82 @@
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barbearia Style</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="landingPage" class="landing-container">
+    <div class="logo-container">
+      <svg viewBox="0 0 100 100">
+        <path fill="white" d="M85,50c0,19.3-15.7,35-35,35S15,69.3,15,50s15.7-35,35-35S85,30.7,85,50z M60,25c0,0-15-5-25,5s-5,25-5,25
+          s-5,15,5,25s25,5,25,5s15,5,25-5s5-25,5-25s5-15-5-25S60,25,60,25z M65,45c2.8,0,5,2.2,5,5s-2.2,5-5,5s-5-2.2-5-5S62.2,45,65,45z
+          M35,45c2.8,0,5,2.2,5,5s-2.2,5-5,5s-5-2.2-5-5S32.2,45,35,45z M50,75c-8.3,0-15-6.7-15-15h30C65,68.3,58.3,75,50,75z"/>
+      </svg>
+      <h1 class="brand-title">Barbearia Style</h1>
+      <p class="brand-subtitle">Sua melhor experiência em cuidados masculinos</p>
+    </div>
+    <a href="#" id="startButton" class="start-button">Agendar Horário</a>
+  </div>
+
+  <div id="mainContent" class="main-content">
+    <div class="container">
+      <h1>Barbearia - Agendamento</h1>
+      
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <button id="prevMonth">&lt;</button>
+          <h2 id="monthDisplay"></h2>
+          <button id="nextMonth">&gt;</button>
+        </div>
+        
+        <div class="weekdays">
+          <div>Dom</div>
+          <div>Seg</div>
+          <div>Ter</div>
+          <div>Qua</div>
+          <div>Qui</div>
+          <div>Sex</div>
+          <div>Sáb</div>
+        </div>
+        
+        <div id="calendar"></div>
+      </div>
+
+      <div id="timeSlots" class="time-slots">
+        <h3>Horários Disponíveis</h3>
+        <div id="timeSlotsContainer"></div>
+      </div>
+
+      <div id="appointmentForm" class="appointment-form hidden">
+        <h3>Fazer Agendamento</h3>
+        <form id="bookingForm">
+          <div class="service-options">
+            <input type="checkbox" id="serviceHair" name="service" value="Cabelo" class="service-checkbox">
+            <label for="serviceHair" class="service-label">Cabelo</label>
+            
+            <input type="checkbox" id="serviceBeard" name="service" value="Barba" class="service-checkbox">
+            <label for="serviceBeard" class="service-label">Barba</label>
+            
+            <input type="checkbox" id="serviceEyebrows" name="service" value="Sobrancelha" class="service-checkbox">
+            <label for="serviceEyebrows" class="service-label">Sobrancelha</label>
+          </div>
+          <div id="serviceError" class="error-message">Por favor, selecione pelo menos um serviço.</div>
+          
+          <input type="text" id="clientName" placeholder="Seu Nome" required>
+          <input type="tel" id="clientPhone" placeholder="Seu Telefone" required>
+          <input type="hidden" id="selectedDateTime">
+          <button type="submit">Confirmar Agendamento</button>
+        </form>
+      </div>
+
+      <div class="appointments-history">
+        <h3>Histórico de Agendamentos</h3>
+        <div id="appointmentsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
